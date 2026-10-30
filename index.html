@@ -4,107 +4,241 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Nhập điểm bằng giọng nói</title>
+<meta name="theme-color" content="#E8EEF6">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-  :root{--bg:#f5f7fa;--card:#fff;--ink:#1d2733;--mut:#6b7785;--pri:#0b7a5b;--pri2:#e3f4ee;--warn:#b45309;--warn2:#fef3c7;--err:#b91c1c;--line:#e2e8f0}
+  :root{
+    --desk:#E8EEF6; --paper:#FCFDFF; --ink:#1F2A44; --mut:#62708A;
+    --rule:#D3E2F4; --edge:#D7E0EC; --red:#D8455C; --leaf:#14946E; --leaf-d:#0D6F53;
+    --mark:#FFE566; --warn:#FFF6D6; --warn-edge:#F0DC8A; --err:#FDECEE; --err-edge:#F2B8C0;
+    --ok:#E7F6F0; --ok-edge:#B5E2D2;
+    --sans:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --hand:"Caveat","Segoe Script","Bradley Hand",cursive;
+  }
   *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
-  header{padding:16px 20px;background:var(--pri);color:#fff}
-  header h1{margin:0;font-size:20px}
-  header p{margin:4px 0 0;font-size:13px;opacity:.9}
-  main{max-width:1100px;margin:0 auto;padding:16px;display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
-  @media(max-width:860px){main{grid-template-columns:1fr}}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
-  .card h2{margin:0 0 10px;font-size:15px}
-  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  button,select,input[type=text],input[type=file]{font:inherit}
-  button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 12px;cursor:pointer}
-  button.pri{background:var(--pri);color:#fff;border-color:var(--pri)}
-  button.rec{background:#dc2626;border-color:#dc2626;color:#fff}
-  button:disabled{opacity:.5;cursor:not-allowed}
-  select,input[type=text]{border:1px solid var(--line);border-radius:8px;padding:8px;background:#fff}
-  table{width:100%;border-collapse:collapse;font-size:14px}
-  th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
-  th{position:sticky;top:0;background:#f1f5f9;z-index:1}
-  .tbl{max-height:62vh;overflow:auto;border:1px solid var(--line);border-radius:8px}
-  td input{width:70px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;font:inherit}
-  tr.hit{background:var(--pri2);transition:background .3s}
-  tr.filled td:nth-child(3) input{font-weight:600;color:var(--pri)}
-  .heard{font-size:18px;min-height:28px;padding:8px 10px;background:#f8fafc;border-radius:8px;border:1px dashed var(--line);margin-bottom:8px}
-  .log{max-height:40vh;overflow:auto;display:flex;flex-direction:column;gap:6px;margin-top:8px}
-  .item{padding:8px 10px;border-radius:8px;border:1px solid var(--line);font-size:13px}
-  .item.ok{background:var(--pri2);border-color:#b7e3d2}
-  .item.warn{background:var(--warn2);border-color:#fde68a}
-  .item.err{background:#fee2e2;border-color:#fecaca;color:var(--err)}
-  .item small{color:var(--mut);display:block}
-  .cands{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
-  .mut{color:var(--mut);font-size:13px}
-  .stat{font-size:13px;color:var(--mut);margin:8px 0 0}
-  label.chk{font-size:13px;display:flex;gap:6px;align-items:center}
-  .opts{display:grid;gap:8px;margin:8px 0;padding:10px;background:#f8fafc;border-radius:8px;border:1px solid var(--line)}
+  [hidden]{display:none!important}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--desk);color:var(--ink);font:400 15px/1.5 var(--sans);min-height:100vh;display:flex;flex-direction:column}
+  button,select,input{font:inherit;color:inherit}
+  :focus-visible{outline:3px solid rgba(46,107,255,.45);outline-offset:2px;border-radius:8px}
+
+  .page{width:100%;max-width:1180px;margin:0 auto;padding:28px 20px 12px;flex:1}
+  .top{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+  .mark{width:44px;height:44px;border-radius:14px;background:var(--leaf);display:grid;place-items:center;flex:none}
+  .top h1{margin:0;font-size:22px;line-height:1.2;font-weight:700;letter-spacing:-.01em}
+  .top p{margin:2px 0 0;color:var(--mut);font-size:14px}
+
+  .layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(320px,1fr);gap:22px;align-items:start}
+  .card{background:var(--paper);border:1px solid var(--edge);border-radius:18px;box-shadow:0 1px 2px rgba(31,42,68,.05),0 18px 40px -26px rgba(31,42,68,.35)}
+
+  /* ---------- Sổ điểm ---------- */
+  .sheet{padding:18px 18px 8px}
+  .sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .sheet-head h2{margin:0;font-size:17px;font-weight:600}
+  .stat{margin:2px 0 0;font-size:13px;color:var(--mut)}
+  .tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--edge);background:#fff;border-radius:10px;padding:8px 12px;font-size:14px;font-weight:500;cursor:pointer;transition:background .15s,border-color .15s,transform .15s}
+  .btn:hover:not(:disabled){background:#F3F7FC;border-color:#C5D3E5}
+  .btn:active:not(:disabled){transform:translateY(1px)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.solid{background:var(--ink);border-color:var(--ink);color:#fff}
+  .btn.solid:hover:not(:disabled){background:#2B3858;border-color:#2B3858}
+  .btn.quiet{border-color:transparent;background:transparent;color:var(--mut)}
+  .sel{border:1px solid var(--edge);border-radius:10px;padding:8px 10px;background:#fff;max-width:220px}
+
+  .drop{display:grid;place-items:center;text-align:center;gap:6px;padding:56px 24px;margin-bottom:12px;border:2px dashed #B9CBE2;border-radius:14px;background:
+    repeating-linear-gradient(to bottom,transparent 0 35px,var(--rule) 35px 36px);cursor:pointer;transition:border-color .2s,background-color .2s}
+  .drop:hover,.drop.over{border-color:var(--leaf);background-color:#F2FBF7}
+  .drop strong{font-size:17px;font-weight:600;background:var(--paper);padding:0 10px}
+  .drop span{color:var(--mut);font-size:14px;background:var(--paper);padding:0 10px}
+  .drop svg{background:var(--paper);padding:0 8px}
+
+  .notebook{border:1px solid var(--edge);border-radius:12px;overflow:hidden;background:var(--paper);margin-bottom:12px}
+  .nb-head{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--edge);font-size:13px;color:var(--mut)}
+  .bar{flex:1;height:6px;border-radius:99px;background:#E4ECF6;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;background:var(--leaf);border-radius:99px;transition:width .4s ease}
+  .nb-scroll{max-height:64vh;overflow:auto;background:
+    linear-gradient(to right,transparent 58px,var(--red) 58px 59.5px,transparent 59.5px) local,var(--paper)}
+  table{width:100%;border-collapse:collapse}
+  thead th{position:sticky;top:0;z-index:1;background:var(--paper);text-align:left;font-size:13px;font-weight:600;color:var(--mut);padding:9px 12px;border-bottom:1.5px solid #BFD3EA}
+  tbody td{height:46px;padding:0 12px;border-bottom:1px solid var(--rule);vertical-align:middle}
+  .c-stt{width:58px;text-align:center;color:var(--mut);font-size:13px}
+  tbody td.c-stt{padding:0}
+  thead th.c-stt{padding:9px 0}
+  .c-name{padding-left:18px!important}
+  .c-score{width:116px}
+  .score{width:84px;border:0;border-bottom:1.5px dashed transparent;background:transparent;font-family:var(--hand);font-weight:700;font-size:29px;line-height:1;color:var(--red);padding:2px 4px;border-radius:4px}
+  .score:hover{border-bottom-color:#C9D6E6}
+  .score:focus{outline:none;border-bottom-color:var(--red);background:#FFF9E0}
+  tr.hit .score{animation:mark 2s ease-out}
+  @keyframes mark{0%,35%{background:var(--mark)}100%{background:transparent}}
+
+  /* ---------- Giọng nói ---------- */
+  .voice{position:sticky;top:16px;padding:22px 20px 16px;display:grid;gap:14px}
+  .orb-wrap{display:grid;justify-items:center;gap:10px;padding-top:4px}
+  .orb{position:relative;width:128px;height:128px;border-radius:50%;border:1.5px solid #BFD3EA;background:#fff;color:var(--leaf);display:grid;place-items:center;cursor:pointer;transition:background .25s,color .25s,border-color .25s,box-shadow .25s,transform .15s;box-shadow:0 10px 26px -14px rgba(20,148,110,.55)}
+  .orb:hover:not(:disabled){border-color:var(--leaf)}
+  .orb:active:not(:disabled){transform:scale(.97)}
+  .orb:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+  .orb .wave{display:none;gap:5px;align-items:center;height:44px}
+  .orb .wave b{width:6px;height:14px;border-radius:99px;background:#fff;animation:eq 1s ease-in-out infinite}
+  .orb .wave b:nth-child(2){animation-delay:.12s}.orb .wave b:nth-child(3){animation-delay:.24s}
+  .orb .wave b:nth-child(4){animation-delay:.36s}.orb .wave b:nth-child(5){animation-delay:.48s}
+  @keyframes eq{0%,100%{height:12px}50%{height:42px}}
+  .orb.on{background:var(--leaf);border-color:var(--leaf-d);color:#fff}
+  .orb.on svg{display:none}
+  .orb.on .wave{display:flex}
+  .orb.on::after{content:"";position:absolute;inset:-9px;border-radius:50%;border:2px solid var(--leaf);opacity:.5;animation:ring 1.8s ease-out infinite}
+  @keyframes ring{from{transform:scale(.92);opacity:.55}to{transform:scale(1.22);opacity:0}}
+  .state{font-size:14px;font-weight:500;color:var(--mut);text-align:center;min-height:21px}
+  .orb.on + .state{color:var(--leaf-d)}
+
+  .heard{min-height:78px;padding:12px 14px;border-radius:12px;background:#F4F8FC;border:1px solid var(--edge);font-size:20px;line-height:1.35;font-weight:600;letter-spacing:-.005em;display:flex;align-items:center}
+  .heard.idle{font-size:15px;font-weight:400;color:var(--mut)}
+  .manual{display:flex;gap:8px}
+  .manual input{flex:1;min-width:0;border:1px solid var(--edge);border-radius:10px;padding:9px 12px;background:#fff}
+  .manual input::placeholder{color:#93A0B5}
+  .note{margin:0;font-size:13px;color:var(--mut)}
+  .opts{border-top:1px solid var(--edge);padding-top:10px}
+  .opts summary{cursor:pointer;font-size:14px;font-weight:500;color:var(--mut);list-style:none;display:flex;align-items:center;gap:6px;width:max-content}
+  .opts summary::-webkit-details-marker{display:none}
+  .opts summary::before{content:"";width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform .2s;margin-right:2px}
+  .opts[open] summary::before{transform:rotate(45deg)}
+  .opts-body{display:grid;gap:10px;padding-top:12px;font-size:14px}
+  .opts-body label{display:flex;align-items:center;gap:10px;justify-content:space-between}
+  .opts-body .chk{justify-content:flex-start}
+  .opts-body input[type=checkbox]{width:18px;height:18px;accent-color:var(--leaf)}
+
+  .log{display:flex;flex-direction:column;gap:8px;max-height:36vh;overflow:auto}
+  .item{padding:9px 12px;border-radius:10px;border:1px solid var(--edge);border-left-width:4px;background:#fff;font-size:14px}
+  .item.ok{background:var(--ok);border-color:var(--ok-edge);border-left-color:var(--leaf)}
+  .item.warn{background:var(--warn);border-color:var(--warn-edge);border-left-color:#E0B400}
+  .item.err{background:var(--err);border-color:var(--err-edge);border-left-color:var(--red);color:#8E2335}
+  .item small{display:block;color:var(--mut);font-size:12.5px;margin-top:1px}
+  .item .undo{margin-top:6px;border:0;background:transparent;color:var(--mut);font-size:13px;font-weight:500;padding:2px 0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+  .item .undo:hover{color:var(--ink)}
+  .cands{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .cands button{border:1px solid var(--warn-edge);background:#fff;border-radius:99px;padding:5px 12px;font-size:13px;cursor:pointer}
+  .cands button:hover{background:#FFFBEA}
+
+  footer{padding:22px 20px 26px;text-align:center;color:var(--mut);font-size:13px}
+
+  @media(max-width:900px){
+    .layout{grid-template-columns:1fr}
+    .voice{position:static}
+    body.has-list .voice{order:-1}
+    .nb-scroll{max-height:56vh}
+  }
+  @media(max-width:480px){
+    .page{padding:18px 12px 8px}
+    .sheet{padding:14px 12px 6px}
+    .top h1{font-size:19px}
+    .sel{max-width:100%;flex:1 1 140px}
+  }
+  @media(prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  }
 </style>
 </head>
 <body>
-<header>
-  <h1>🎙️ Nhập điểm bằng giọng nói</h1>
-  <p>Nhập file Excel danh sách lớp → bấm micro → đọc “Nguyễn Văn An tám phẩy năm” → điểm tự điền đúng dòng.</p>
-</header>
+<div class="page">
+  <header class="top">
+    <span class="mark" aria-hidden="true">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+    </span>
+    <div>
+      <h1>Nhập điểm bằng giọng nói</h1>
+      <p>Đọc tên và điểm, bảng điểm tự điền đúng dòng.</p>
+    </div>
+  </header>
 
-<main>
-  <section class="card">
-    <h2>1. Danh sách học sinh</h2>
-    <div class="row">
-      <input type="file" id="file" accept=".xlsx,.xls,.csv">
-      <select id="sheetSel" style="display:none"></select>
-      <select id="colSel" style="display:none" title="Cột chứa họ tên"></select>
-    </div>
-    <p class="stat" id="stat">Chưa có danh sách. Chọn file Excel (.xlsx, .xls, .csv).</p>
-    <div class="row" style="margin:10px 0">
-      <button id="exportBtn" disabled>⬇️ Xuất Excel kèm điểm</button>
-      <button id="clearBtn" disabled>Xóa hết điểm</button>
-    </div>
-    <div class="tbl">
-      <table>
-        <thead><tr><th style="width:50px">STT</th><th>Họ và tên</th><th style="width:100px">Điểm</th></tr></thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-  </section>
+  <main class="layout">
+    <section class="card sheet" aria-labelledby="h-list">
+      <div class="sheet-head">
+        <div>
+          <h2 id="h-list">Danh sách lớp</h2>
+          <p class="stat" id="stat">Chưa có danh sách.</p>
+        </div>
+      </div>
 
-  <section class="card">
-    <h2>2. Đọc tên + điểm</h2>
-    <div class="row" style="margin-bottom:8px">
-      <button id="micBtn" class="pri" disabled>🎤 Bắt đầu nghe</button>
-      <label class="chk"><input type="checkbox" id="speakChk"> Đọc lại để xác nhận</label>
-    </div>
-    <div class="opts">
-      <label class="chk">⚡ Tốc độ điền:
-        <select id="speedSel">
-          <option value="450" selected>Nhanh – chốt ngay (khuyên dùng)</option>
-          <option value="1000">Cân bằng</option>
-          <option value="-1">Chắc chắn (chờ kết quả cuối)</option>
-        </select>
+      <input type="file" id="file" accept=".xlsx,.xls,.csv" hidden>
+      <label class="drop" id="drop" for="file">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#14946E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13l6 6M15 13l-6 6"/></svg>
+        <strong>Thả file Excel danh sách lớp vào đây</strong>
+        <span>hoặc bấm để chọn file (.xlsx, .xls, .csv). Cột họ tên được nhận tự động.</span>
       </label>
-      <div><button id="forgetBtn" style="padding:4px 8px;font-size:12px">Quên các lần đã chọn tay</button></div>
-    </div>
-    <div class="heard" id="heard">Nhấn “Bắt đầu nghe” rồi đọc, ví dụ: “Trần Thị Mai chín phẩy hai lăm”.</div>
-    <div class="row">
-      <input type="text" id="manual" placeholder="Hoặc gõ thử: Mai 8,5" style="flex:1;min-width:150px">
-      <button id="manualBtn">Gửi</button>
-    </div>
-    <p class="mut" id="support"></p>
-    <div class="log" id="log"></div>
-    <p class="mut" style="margin-top:12px">Mẹo: đọc rõ họ tên đầy đủ để tránh trùng tên. Nếu app chưa chắc chắn, nó hiện các lựa chọn để bạn bấm; lần sau cùng cách phát âm đó app sẽ nhớ và điền thẳng.</p>
-  </section>
-</main>
+
+      <div class="tools" id="tools" hidden>
+        <label class="btn" for="file" tabindex="0" id="swapBtn">Chọn file khác</label>
+        <select id="sheetSel" class="sel" style="display:none" aria-label="Trang tính"></select>
+        <select id="colSel" class="sel" style="display:none" aria-label="Cột chứa họ tên"></select>
+        <button class="btn solid" id="exportBtn" disabled>Xuất Excel kèm điểm</button>
+        <button class="btn quiet" id="clearBtn" disabled>Xóa hết điểm</button>
+      </div>
+
+      <div class="notebook" id="notebook" hidden>
+        <div class="nb-head"><span id="prog">0/0 đã nhập</span><div class="bar"><i id="bar"></i></div></div>
+        <div class="nb-scroll">
+          <table>
+            <thead><tr><th class="c-stt">STT</th><th class="c-name">Họ và tên</th><th class="c-score">Điểm</th></tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <aside class="card voice" aria-label="Nghe giọng nói">
+      <div class="orb-wrap">
+        <button class="orb" id="micBtn" disabled aria-pressed="false" aria-label="Bật hoặc tắt micro">
+          <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+          <span class="wave" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b></span>
+        </button>
+        <div class="state" id="micLabel" aria-live="polite">Nhập danh sách lớp trước</div>
+      </div>
+
+      <div class="heard idle" id="heard">Lời bạn nói sẽ hiện ở đây. Ví dụ: “Trần Thị Mai chín phẩy hai lăm”.</div>
+
+      <div class="manual">
+        <input type="text" id="manual" placeholder="Hoặc gõ thử: Mai 8,5" aria-label="Gõ thử tên và điểm">
+        <button class="btn" id="manualBtn">Gửi</button>
+      </div>
+      <p class="note" id="support"></p>
+
+      <div class="log" id="log" aria-live="polite"></div>
+
+      <details class="opts">
+        <summary>Tùy chọn</summary>
+        <div class="opts-body">
+          <label>Tốc độ điền
+            <select id="speedSel" class="sel">
+              <option value="450" selected>Nhanh – chốt ngay</option>
+              <option value="1000">Cân bằng</option>
+              <option value="-1">Chắc chắn – chờ kết quả cuối</option>
+            </select>
+          </label>
+          <label class="chk"><input type="checkbox" id="speakChk"> Đọc lại để xác nhận</label>
+          <button class="btn quiet" id="forgetBtn" style="justify-self:start;padding-left:0">Quên các lần đã chọn tay</button>
+        </div>
+      </details>
+      <p class="note">Đọc rõ họ tên đầy đủ để tránh trùng tên. Khi app chưa chắc chắn, bạn bấm chọn đúng học sinh, lần sau app sẽ nhớ cách đọc đó.</p>
+    </aside>
+  </main>
+</div>
+
+<footer>design by tranduongquocanh</footer>
 
 <script>
 (() => {
   const $ = id => document.getElementById(id);
   const tbody=$("tbody"), logEl=$("log"), heardEl=$("heard");
+  const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const setHeard = (t,idle) => { heardEl.textContent=t; heardEl.classList.toggle("idle",!!idle); };
 
   // ================= Chuỗi & so khớp =================
-  const stripVN = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d").replace(/Đ/g,"D");
+  const stripVN = s => s.normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/đ/g,"d").replace(/Đ/g,"D");
   const normName = s => stripVN(String(s).toLowerCase()).replace(/[^a-z\s]/g," ").replace(/\s+/g," ").trim();
 
   // Levenshtein có trọng số
@@ -159,14 +293,26 @@
   $("forgetBtn").onclick=()=>{ aliases={}; saveAliases(); addLog("ok","Đã xóa các lần chọn tay đã học."); };
 
   // ================= Đọc Excel =================
-  $("file").addEventListener("change", async e => {
-    const f=e.target.files[0]; if(!f) return;
-    workbook = XLSX.read(await f.arrayBuffer(),{type:"array"});
+  async function handleFile(f){
+    if(!f) return;
+    try{
+      workbook = XLSX.read(await f.arrayBuffer(),{type:"array"});
+    }catch(_){ $("stat").textContent="Không đọc được file này. Hãy chọn file .xlsx, .xls hoặc .csv."; return; }
     const sel=$("sheetSel");
-    sel.innerHTML=workbook.SheetNames.map((n,i)=>`<option value="${i}">${n}</option>`).join("");
+    sel.innerHTML=workbook.SheetNames.map((n,i)=>`<option value="${i}">${esc(n)}</option>`).join("");
     sel.style.display=workbook.SheetNames.length>1?"":"none";
     loadSheet(0);
-  });
+  }
+  $("file").addEventListener("change", e => { handleFile(e.target.files[0]); e.target.value=""; });
+  $("swapBtn").addEventListener("keydown", e => { if(e.key==="Enter"||e.key===" "){ e.preventDefault(); $("file").click(); } });
+  const drop=$("drop");
+  ["dragenter","dragover"].forEach(t=>drop.addEventListener(t,e=>{ e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{ e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop",e=>handleFile(e.dataTransfer.files[0]));
+  // thả file ra ngoài vùng thả không làm trình duyệt mở file
+  window.addEventListener("dragover",e=>e.preventDefault());
+  window.addEventListener("drop",e=>{ if(!drop.contains(e.target)) e.preventDefault(); });
+
   $("sheetSel").addEventListener("change",e=>loadSheet(+e.target.value));
 
   function loadSheet(i){
@@ -183,7 +329,7 @@
     let def=0;
     if(!(iHo>=0&&iTen>=0)){ const k=header.findIndex(h=>/họ.*tên|họ và tên|tên|name/i.test(h)); def=k>=0?k:0; }
     const cs=$("colSel");
-    cs.innerHTML=nameCols.map((o,k)=>`<option value="${k}">${o.label}</option>`).join("");
+    cs.innerHTML=nameCols.map((o,k)=>`<option value="${k}">${esc(o.label)}</option>`).join("");
     cs.value=String(def); cs.style.display="";
     buildStudents();
   }
@@ -200,22 +346,33 @@
       students.push({name,norm,tokens:norm.split(" "),score:"",rowIdx:idx});
     });
     render();
-    $("stat").textContent=students.length?`Đã nhận ${students.length} học sinh.`:"Không nhận diện được tên. Hãy thử đổi cột họ tên.";
-    $("micBtn").disabled=!students.length || !SR;
-    $("exportBtn").disabled=$("clearBtn").disabled=!students.length;
+    const has=students.length>0;
+    $("stat").textContent=has?`Đã nhận ${students.length} học sinh.`:"Chưa nhận được tên nào. Hãy thử đổi cột họ tên.";
+    $("notebook").hidden=!has;
+    $("tools").hidden=!(has||workbook);
+    $("drop").hidden=has;
+    document.body.classList.toggle("has-list",has);
+    $("micBtn").disabled=!has || !SR;
+    $("exportBtn").disabled=$("clearBtn").disabled=!has;
+    setMic();
+  }
+  function updateProgress(){
+    const n=students.length, d=students.filter(s=>s.score!=="").length;
+    $("prog").textContent=`${d}/${n} đã nhập`;
+    $("bar").style.width=(n?Math.round(d/n*100):0)+"%";
   }
   function render(){
     tbody.innerHTML=students.map((s,i)=>`
-      <tr id="r${i}" class="${s.score!==""?"filled":""}">
-        <td>${i+1}</td><td>${s.name}</td>
-        <td><input data-i="${i}" value="${s.score}" inputmode="decimal"></td>
+      <tr id="r${i}">
+        <td class="c-stt">${i+1}</td><td class="c-name">${esc(s.name)}</td>
+        <td class="c-score"><input class="score" data-i="${i}" value="${esc(s.score)}" inputmode="decimal" aria-label="Điểm của ${esc(s.name)}"></td>
       </tr>`).join("");
+    updateProgress();
   }
   tbody.addEventListener("input",e=>{
     if(e.target.matches("input[data-i]")){
       const i=+e.target.dataset.i; students[i].score=e.target.value.replace(",",".");
-      e.target.closest("tr").classList.toggle("filled",students[i].score!=="");
-      save();
+      updateProgress(); save();
     }
   });
 
@@ -277,9 +434,9 @@
     return {text,...p,ranked};
   }
   function decide(a){
-    if(!a.nameText) return {type:"err",msg:`Không nghe được tên: “${a.text}”`};
-    if(!a.ranked.length) return {type:"err",msg:`Không tìm thấy học sinh tên “${a.nameText}”${a.score!==null?` (điểm ${a.score})`:""}`};
-    if(a.score===null) return {type:"err",msg:`Không hiểu điểm trong: “${a.text}”`};
+    if(!a.nameText) return {type:"err",msg:`Không nghe được tên: “${esc(a.text)}”`};
+    if(!a.ranked.length) return {type:"err",msg:`Không tìm thấy học sinh tên “${esc(a.nameText)}”${a.score!==null?` (điểm ${a.score})`:""}`};
+    if(a.score===null) return {type:"err",msg:`Không hiểu điểm trong: “${esc(a.text)}”`};
     const top=a.ranked[0], sec=a.ranked[1];
     const ok=top.score>=0.62&&(!sec||top.score-sec.score>=0.08);
     return ok?{type:"fill",i:top.i,score:a.score}:{type:"ask",cands:a.ranked.slice(0,5),score:a.score};
@@ -300,20 +457,20 @@
   const committed=new Map(), timers=new Map();
   function setScore(i,v){
     students[i].score=(v===""||v==null)?"":String(v);
-    const tr=$("r"+i); tr.querySelector("input").value=students[i].score;
-    tr.classList.toggle("filled",students[i].score!=="");
+    $("r"+i).querySelector("input").value=students[i].score;
+    updateProgress();
   }
   function flash(i){
-    const tr=$("r"+i); tr.classList.add("hit");
+    const tr=$("r"+i); tr.classList.remove("hit"); void tr.offsetWidth; tr.classList.add("hit");
     tr.scrollIntoView({block:"center",behavior:"smooth"});
-    setTimeout(()=>tr.classList.remove("hit"),1800);
+    setTimeout(()=>tr.classList.remove("hit"),2100);
   }
   function applyFill(i,score,text,resIdx,fast){
     const c=committed.get(resIdx);
     if(c){ setScore(c.i,c.prev); c.logEl&&c.logEl.remove(); }
     const prev=students[i].score;
     setScore(i,score); flash(i);
-    const el=addLog("ok",`${fast?"⚡ ":""}<b>${students[i].name}</b> → <b>${score}</b>${prev!==""&&prev!==String(score)?` (trước đó: ${prev})`:""}<small>nghe: “${text}”</small>`,{undo:{i,prev}});
+    const el=addLog("ok",`<b>${esc(students[i].name)}</b> → <b>${score}</b>${prev!==""&&prev!==String(score)?` (trước đó: ${esc(prev)})`:""}<small>Nghe được: “${esc(text)}”</small>`,{undo:{i,prev}});
     committed.set(resIdx,{i,score,prev,logEl:el,wc:text.split(/\s+/).length});
     save();
     if(fast) confirmSpeak(i,score);   // không dừng/khởi động lại micro nữa → chỉ xin quyền 1 lần
@@ -333,7 +490,7 @@
       if(w.length>lk.wc) onInterim(resIdx+"~",w.slice(lk.wc).join(" "));
       return;
     }
-    heardEl.textContent="… "+text;
+    setHeard("… "+text);
     clearTimeout(timers.get(resIdx));
     const delay=+$("speedSel").value; if(delay<0||!text) return;
     const a=pickBest([text]); const d=a.d;
@@ -345,7 +502,7 @@
   function onFinal(resIdx,texts){
     clearTimeout(timers.get(resIdx)); timers.delete(resIdx);
     const a=pickBest(texts); const d=a.d;
-    heardEl.textContent="“"+a.text+"”";
+    setHeard("“"+a.text+"”");
     const c=committed.get(resIdx);
     if(c){
       // Đã chốt ngay khi đọc xong: không sửa lại. Chỉ xử lý phần nói thêm phía sau (nếu có).
@@ -356,14 +513,14 @@
     }
     if(d.type==="fill"){ applyFill(d.i,d.score,a.text,resIdx,false); confirmSpeak(d.i,d.score); committed.delete(resIdx); }
     else if(d.type==="ask"){
-      addLog("warn",`Chưa chắc là ai: “${a.nameText}” – điểm ${d.score}. Chọn đúng học sinh:`,{cands:d.cands,score:d.score,text:a.text,spoken:a.nameText});
+      addLog("warn",`Chưa chắc đây là ai: “${esc(a.nameText)}”, điểm ${d.score}. Chọn đúng học sinh:`,{cands:d.cands,score:d.score,text:a.text,spoken:a.nameText});
     } else addLog("err",d.msg);
   }
 
   function addLog(type,html,extra){
     const d=document.createElement("div"); d.className="item "+type; d.innerHTML=html;
     if(extra&&extra.undo){
-      const b=document.createElement("button"); b.textContent="↩ Hoàn tác"; b.style.cssText="margin-top:6px;padding:3px 8px;font-size:12px";
+      const b=document.createElement("button"); b.className="undo"; b.textContent="Hoàn tác";
       b.onclick=()=>{ const {i,prev}=extra.undo; setScore(i,prev); d.remove(); save(); };
       d.appendChild(b);
     }
@@ -384,8 +541,8 @@
   // ================= Nhận diện giọng nói =================
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   let rec=null, listening=false;
-  if(!SR){ $("support").textContent="⚠️ Trình duyệt này không hỗ trợ nhận diện giọng nói. Hãy dùng Google Chrome hoặc Microsoft Edge."; $("micBtn").disabled=true; }
-  else if(location.protocol==="file:") $("support").textContent="Lưu ý: mở file trực tiếp có thể bị hỏi quyền micro nhiều lần. Đưa lên web HTTPS (vd Netlify) để dùng ổn định.";
+  if(!SR){ $("support").textContent="Trình duyệt này chưa hỗ trợ nhận diện giọng nói. Hãy dùng Google Chrome hoặc Microsoft Edge."; }
+  else if(location.protocol==="file:") $("support").textContent="Đang mở file trực tiếp nên Chrome có thể hỏi quyền micro nhiều lần. Đưa trang lên địa chỉ HTTPS để Chrome nhớ quyền.";
 
   function startRec(){
     rec=new SR(); rec.lang="vi-VN"; rec.continuous=true; rec.interimResults=true; rec.maxAlternatives=5;
@@ -399,20 +556,23 @@
         } else onInterim(i,r[0].transcript.trim());
       }
     };
-    rec.onerror=e=>{ if(e.error==="not-allowed"||e.error==="service-not-allowed"){ listening=false; setMic(); addLog("err","Chưa được cấp quyền micro. Hãy cho phép micro cho trang này."); } };
+    rec.onerror=e=>{ if(e.error==="not-allowed"||e.error==="service-not-allowed"){ listening=false; setMic(); addLog("err","Chưa có quyền dùng micro. Hãy cho phép micro cho trang này trong thanh địa chỉ của trình duyệt."); } };
     rec.onend=()=>{ if(listening){ try{rec.start();}catch(_){} } };
     rec.start();
   }
   function setMic(){
     const b=$("micBtn");
-    b.textContent=listening?"⏹ Dừng nghe":"🎤 Bắt đầu nghe";
-    b.className=listening?"rec":"pri";
+    b.classList.toggle("on",listening);
+    b.setAttribute("aria-pressed",String(listening));
+    $("micLabel").textContent = !SR ? "Trình duyệt chưa hỗ trợ micro"
+      : listening ? "Đang nghe. Bấm để dừng."
+      : students.length ? "Bấm để bắt đầu nghe" : "Nhập danh sách lớp trước";
   }
   $("micBtn").addEventListener("click",()=>{
     if(listening){ listening=false; rec&&rec.stop(); } else { listening=true; startRec(); }
     setMic();
   });
-  $("manualBtn").addEventListener("click",()=>{ const v=$("manual").value.trim(); if(v){ onFinal(-1,[v]); $("manual").value=""; } });
+  $("manualBtn").addEventListener("click",()=>{ const v=$("manual").value.trim(); if(v&&students.length){ onFinal(-1,[v]); $("manual").value=""; } else if(v){ addLog("err","Hãy nhập danh sách lớp trước."); } });
   $("manual").addEventListener("keydown",e=>{ if(e.key==="Enter") $("manualBtn").click(); });
 
   // ================= Xuất / xoá / lưu =================
@@ -430,6 +590,8 @@
     students.forEach(s=>s.score=""); render(); save();
   });
   function save(){ try{ localStorage.setItem("diem-gv",JSON.stringify(students.map(s=>[s.name,s.score]))); }catch(_){} }
+
+  setMic();
 })();
 </script>
 </body>
