@@ -48,22 +48,20 @@
   .btn.quiet{border-color:transparent;background:transparent;color:var(--mut)}
   .sel{border:1px solid var(--edge);border-radius:10px;padding:8px 10px;background:#fff;max-width:220px}
 
-  .drop{display:grid;place-items:center;text-align:center;gap:6px;padding:56px 24px;margin-bottom:12px;border:2px dashed #B9CBE2;border-radius:14px;background:
-    repeating-linear-gradient(to bottom,transparent 0 35px,var(--rule) 35px 36px);cursor:pointer;transition:border-color .2s,background-color .2s}
+  .drop{display:grid;place-items:center;text-align:center;gap:6px;padding:56px 24px;margin-bottom:12px;border:2px dashed #B9CBE2;border-radius:14px;background:var(--paper);cursor:pointer;transition:border-color .2s,background-color .2s}
   .drop:hover,.drop.over{border-color:var(--leaf);background-color:#F2FBF7}
-  .drop strong{font-size:17px;font-weight:600;background:var(--paper);padding:0 10px}
-  .drop span{color:var(--mut);font-size:14px;background:var(--paper);padding:0 10px}
-  .drop svg{background:var(--paper);padding:0 8px}
+  .drop strong{font-size:17px;font-weight:600}
+  .drop span{color:var(--mut);font-size:14px}
 
   .notebook{border:1px solid var(--edge);border-radius:12px;overflow:hidden;background:var(--paper);margin-bottom:12px}
   .nb-head{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--edge);font-size:13px;color:var(--mut)}
   .bar{flex:1;height:6px;border-radius:99px;background:#E4ECF6;overflow:hidden}
   .bar i{display:block;height:100%;width:0;background:var(--leaf);border-radius:99px;transition:width .4s ease}
-  .nb-scroll{max-height:64vh;overflow:auto;background:
-    linear-gradient(to right,transparent 58px,var(--red) 58px 59.5px,transparent 59.5px) local,var(--paper)}
+  .nb-scroll{max-height:64vh;overflow:auto;background:var(--paper)}
   table{width:100%;border-collapse:collapse}
-  thead th{position:sticky;top:0;z-index:1;background:var(--paper);text-align:left;font-size:13px;font-weight:600;color:var(--mut);padding:9px 12px;border-bottom:1.5px solid #BFD3EA}
-  tbody td{height:46px;padding:0 12px;border-bottom:1px solid var(--rule);vertical-align:middle}
+  thead th{position:sticky;top:0;z-index:1;background:var(--paper);text-align:left;font-size:13px;font-weight:600;color:var(--mut);padding:9px 12px;border-bottom:1px solid #D7E2EE}
+  tbody td{height:46px;padding:0 12px;border-bottom:1px solid #E9EFF6;vertical-align:middle;transition:background-color .12s}
+  tbody tr:hover td{background:#E8F3F9}
   .c-stt{width:58px;text-align:center;color:var(--mut);font-size:13px}
   tbody td.c-stt{padding:0}
   thead th.c-stt{padding:9px 0}
