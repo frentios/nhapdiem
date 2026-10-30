@@ -385,11 +385,16 @@
     if(!toks.length) return null;
     let str="",seenDec=false,intDone=false;
     for(const t of toks){
-      if(/^\d+([.,]\d+)?$/.test(t)){ str+=(str&&!seenDec&&intDone?".":"")+t.replace(",","."); if(/[.,]/.test(t)) seenDec=true; intDone=true; continue; }
+      if(/^\d+([.,]\d+)?$/.test(t)){
+        let x=t.replace(",",".");
+        if(/^\d{3}$/.test(x)&&!str) x=x[0]+"."+x.slice(1);          // 3 chữ số: 725 → 7.25
+        if(str&&!seenDec&&intDone){ str+="."; seenDec=true; }
+        str+=x; if(x.includes(".")) seenDec=true; intDone=true; continue;
+      }
       if(DEC.has(t)){ str+="."; seenDec=true; continue; }
       if(HALF.has(t)){ if(!seenDec){ str+=".5"; seenDec=true; } continue; }
       if(TEN.has(t)){ if(!str) str="10"; continue; }
-      if(t in DIGIT){ if(str&&!seenDec&&intDone) str+="."; str+=DIGIT[t]; intDone=true; continue; }
+      if(t in DIGIT){ if(str&&!seenDec&&intDone){ str+="."; seenDec=true; } str+=DIGIT[t]; intDone=true; continue; }
     }
     let v=parseFloat(str); if(isNaN(v)) return null;
     if(v>10&&v<=100&&!seenDec) v=v/10;
