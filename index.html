@@ -401,14 +401,25 @@
     if(v<0||v>10) return null;
     return Math.round(v*100)/100;
   }
-  function splitNameScore(text){
+  // Trả về các cách tách "tên | điểm". Cách đầu: lấy mọi từ số ở cuối làm điểm.
+  // Các cách sau: chuyển 1–2 từ số mơ hồ (năm, ba, tư, sáu…) về phía tên, vì đó cũng là tên người.
+  function splitCandidates(text){
     const t=text.toLowerCase().replace(/(\d),(\d)/g,"$1.$2").replace(/[,;:!?]/g," ").replace(/\s+/g," ").trim();
     const toks=t.split(" ").filter(Boolean);
     let k=toks.length; while(k>0&&isNumTok(toks[k-1])) k--;
-    let nameToks=toks.slice(0,k), numToks=toks.slice(k);
-    if(!nameToks.length&&numToks.length>1){ nameToks=[numToks[0]]; numToks=numToks.slice(1); }
-    return {nameText:nameToks.join(" "),score:parseScore(numToks)};
+    const mk=kk=>{
+      let nameToks=toks.slice(0,kk), numToks=toks.slice(kk);
+      if(!nameToks.length&&numToks.length>1){ nameToks=[numToks[0]]; numToks=numToks.slice(1); }
+      return {nameText:nameToks.join(" "),score:parseScore(numToks)};
+    };
+    const out=[mk(k)];
+    for(let kk=k+1;kk<=Math.min(k+2,toks.length-1);kk++){
+      if(!(toks[kk-1] in DIGIT)) break;
+      out.push(mk(kk));
+    }
+    return out;
   }
+  const splitNameScore = text => splitCandidates(text)[0];
 
   // ================= Dò tên =================
   function rank(nameText){
@@ -425,15 +436,19 @@
       }
       const cover=hit/s.tokens.length;
       let score=(sum/sp.length)*(0.65+0.35*cover);
-      if(used.has(s.tokens.length-1)) score+=0.05;
+      if(used.has(s.tokens.length-1)) score+=0.1;   // giáo viên thường gọi bằng tên (từ cuối)
       return {i,score};
     }).filter(r=>r.score>0.3).sort((a,b)=>b.score-a.score);
   }
 
   function analyze(text){
-    const p=splitNameScore(text);
-    const ranked=p.nameText?rank(p.nameText):[];
-    return {text,...p,ranked};
+    let best=null;
+    for(const p of splitCandidates(text)){
+      const ranked=p.nameText?rank(p.nameText):[];
+      const key=(ranked[0]?ranked[0].score:0)+(p.score!==null?0.15:0);
+      if(!best||key>best.key) best={text,...p,ranked,key};
+    }
+    return best;
   }
   function decide(a){
     if(!a.nameText) return {type:"err",msg:`Không nghe được tên: “${esc(a.text)}”`};
