@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nhập điểm bằng giọng nói</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{--bg:#f5f7fa;--card:#fff;--ink:#1d2733;--mut:#6b7785;--pri:#0b7a5b;--pri2:#e3f4ee;--warn:#b45309;--warn2:#fef3c7;--err:#b91c1c;--line:#e2e8f0}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+  header{padding:16px 20px;background:var(--pri);color:#fff}
+  header h1{margin:0;font-size:20px}
+  header p{margin:4px 0 0;font-size:13px;opacity:.9}
+  main{max-width:1100px;margin:0 auto;padding:16px;display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
+  @media(max-width:860px){main{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .card h2{margin:0 0 10px;font-size:15px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  button,select,input[type=text],input[type=file]{font:inherit}
+  button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 12px;cursor:pointer}
+  button.pri{background:var(--pri);color:#fff;border-color:var(--pri)}
+  button.rec{background:#dc2626;border-color:#dc2626;color:#fff}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  select,input[type=text]{border:1px solid var(--line);border-radius:8px;padding:8px;background:#fff}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+  th{position:sticky;top:0;background:#f1f5f9;z-index:1}
+  .tbl{max-height:62vh;overflow:auto;border:1px solid var(--line);border-radius:8px}
+  td input{width:70px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;font:inherit}
+  tr.hit{background:var(--pri2);transition:background .3s}
+  tr.filled td:nth-child(3) input{font-weight:600;color:var(--pri)}
+  .heard{font-size:18px;min-height:28px;padding:8px 10px;background:#f8fafc;border-radius:8px;border:1px dashed var(--line);margin-bottom:8px}
+  .log{max-height:40vh;overflow:auto;display:flex;flex-direction:column;gap:6px;margin-top:8px}
+  .item{padding:8px 10px;border-radius:8px;border:1px solid var(--line);font-size:13px}
+  .item.ok{background:var(--pri2);border-color:#b7e3d2}
+  .item.warn{background:var(--warn2);border-color:#fde68a}
+  .item.err{background:#fee2e2;border-color:#fecaca;color:var(--err)}
+  .item small{color:var(--mut);display:block}
+  .cands{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .mut{color:var(--mut);font-size:13px}
+  .stat{font-size:13px;color:var(--mut);margin:8px 0 0}
+  label.chk{font-size:13px;display:flex;gap:6px;align-items:center}
+  .opts{display:grid;gap:8px;margin:8px 0;padding:10px;background:#f8fafc;border-radius:8px;border:1px solid var(--line)}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎙️ Nhập điểm bằng giọng nói</h1>
+  <p>Nhập file Excel danh sách lớp → bấm micro → đọc “Nguyễn Văn An tám phẩy năm” → điểm tự điền đúng dòng.</p>
+</header>
+
+<main>
+  <section class="card">
+    <h2>1. Danh sách học sinh</h2>
+    <div class="row">
+      <input type="file" id="file" accept=".xlsx,.xls,.csv">
+      <select id="sheetSel" style="display:none"></select>
+      <select id="colSel" style="display:none" title="Cột chứa họ tên"></select>
+    </div>
+    <p class="stat" id="stat">Chưa có danh sách. Chọn file Excel (.xlsx, .xls, .csv).</p>
+    <div class="row" style="margin:10px 0">
+      <button id="exportBtn" disabled>⬇️ Xuất Excel kèm điểm</button>
+      <button id="clearBtn" disabled>Xóa hết điểm</button>
+    </div>
+    <div class="tbl">
+      <table>
+        <thead><tr><th style="width:50px">STT</th><th>Họ và tên</th><th style="width:100px">Điểm</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>2. Đọc tên + điểm</h2>
+    <div class="row" style="margin-bottom:8px">
+      <button id="micBtn" class="pri" disabled>🎤 Bắt đầu nghe</button>
+      <label class="chk"><input type="checkbox" id="speakChk"> Đọc lại để xác nhận</label>
+    </div>
+    <div class="opts">
+      <label class="chk">⚡ Tốc độ điền:
+        <select id="speedSel">
+          <option value="450" selected>Nhanh – chốt ngay (khuyên dùng)</option>
+          <option value="1000">Cân bằng</option>
+          <option value="-1">Chắc chắn (chờ kết quả cuối)</option>
+        </select>
+      </label>
+      <div><button id="forgetBtn" style="padding:4px 8px;font-size:12px">Quên các lần đã chọn tay</button></div>
+    </div>
+    <div class="heard" id="heard">Nhấn “Bắt đầu nghe” rồi đọc, ví dụ: “Trần Thị Mai chín phẩy hai lăm”.</div>
+    <div class="row">
+      <input type="text" id="manual" placeholder="Hoặc gõ thử: Mai 8,5" style="flex:1;min-width:150px">
+      <button id="manualBtn">Gửi</button>
+    </div>
+    <p class="mut" id="support"></p>
+    <div class="log" id="log"></div>
+    <p class="mut" style="margin-top:12px">Mẹo: đọc rõ họ tên đầy đủ để tránh trùng tên. Nếu app chưa chắc chắn, nó hiện các lựa chọn để bạn bấm; lần sau cùng cách phát âm đó app sẽ nhớ và điền thẳng.</p>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const tbody=$("tbody"), logEl=$("log"), heardEl=$("heard");
+
+  // ================= Chuỗi & so khớp =================
+  const stripVN = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d").replace(/Đ/g,"D");
+  const normName = s => stripVN(String(s).toLowerCase()).replace(/[^a-z\s]/g," ").replace(/\s+/g," ").trim();
+
+  // Levenshtein có trọng số
+  function wlev(a,b,sub){
+    const m=a.length,n=b.length; if(!m) return n; if(!n) return m;
+    let prev=new Array(n+1); for(let j=0;j<=n;j++) prev[j]=j;
+    for(let i=1;i<=m;i++){
+      const cur=[i];
+      for(let j=1;j<=n;j++) cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:sub(a[i-1],b[j-1])));
+      prev=cur;
+    }
+    return prev[n];
+  }
+  const unit = () => 1;
+  const CONF = new Set(["vZ","Zv","ln","nl"]);      // cặp dễ nhầm theo vùng: v~d/gi/r (Nam), l~n (Bắc)
+  const subP = (x,y) => CONF.has(x+y) ? 0.45 : 1;
+
+  // Khóa ngữ âm: gộp các cặp âm thường lẫn do giọng vùng miền
+  const ONS=["ngh","ng","nh","ph","th","kh","tr","ch","gh","gi","qu"];
+  const OK={ngh:"Q",ng:"Q",nh:"Y",ph:"F",th:"H",kh:"X",tr:"C",ch:"C",gh:"G",g:"G",gi:"Z",d:"Z",r:"Z",qu:"Kw",c:"K",k:"K",q:"K",s:"S",x:"S"};
+  const FK={ng:"N",nh:"N",n:"N",ch:"K",c:"K",t:"K",p:"P",m:"M"};
+  const phonCache=new Map();
+  function phon(w){
+    let c=phonCache.get(w); if(c!==undefined) return c;
+    let on="",rest=w;
+    for(const o of ONS) if(w.startsWith(o)){ on=o; rest=w.slice(o.length); break; }
+    if(!on && w.length && !/^[aeiouy]/.test(w)){ on=w[0]; rest=w.slice(1); }
+    const onK = on in OK ? OK[on] : on;
+    rest = rest.replace(/y/g,"i");
+    const m = rest.match(/^(.*[aeiou])(ng|nh|n|ch|c|t|p|m)$/);
+    if(m) rest = m[1] + FK[m[2]];
+    c = onK + rest; phonCache.set(w,c); return c;
+  }
+  const simCache=new Map();
+  const dia = () => true;   // dung sai giọng Bắc/Trung/Nam luôn bật (chạy ngầm)
+  function tokSim(a,b){
+    const key=a+"|"+b+(dia()?"1":"0");
+    let v=simCache.get(key); if(v!==undefined) return v;
+    v = 1 - wlev(a,b,unit)/Math.max(a.length,b.length);
+    if(dia()){
+      const pa=phon(a), pb=phon(b);
+      v = Math.max(v, 0.94*(1 - wlev(pa,pb,subP)/Math.max(pa.length,pb.length)));
+    }
+    simCache.set(key,v); return v;
+  }
+
+  // ================= Trạng thái =================
+  let students=[], rawRows=[], headerIdx=-1, workbook=null, nameCols=[];
+  let aliases={};   // cách phát âm đã học: "ten nghe duoc" -> "ten hoc sinh (chuan hoa)"
+  try{ aliases=JSON.parse(localStorage.getItem("diem-alias")||"{}"); }catch(_){}
+  const saveAliases=()=>{ try{ localStorage.setItem("diem-alias",JSON.stringify(aliases)); }catch(_){} };
+  $("forgetBtn").onclick=()=>{ aliases={}; saveAliases(); addLog("ok","Đã xóa các lần chọn tay đã học."); };
+
+  // ================= Đọc Excel =================
+  $("file").addEventListener("change", async e => {
+    const f=e.target.files[0]; if(!f) return;
+    workbook = XLSX.read(await f.arrayBuffer(),{type:"array"});
+    const sel=$("sheetSel");
+    sel.innerHTML=workbook.SheetNames.map((n,i)=>`<option value="${i}">${n}</option>`).join("");
+    sel.style.display=workbook.SheetNames.length>1?"":"none";
+    loadSheet(0);
+  });
+  $("sheetSel").addEventListener("change",e=>loadSheet(+e.target.value));
+
+  function loadSheet(i){
+    const ws=workbook.Sheets[workbook.SheetNames[i]];
+    rawRows=XLSX.utils.sheet_to_json(ws,{header:1,defval:"",blankrows:false});
+    headerIdx=rawRows.findIndex(r=>r.some(c=>/(^|\s)(họ|tên|name|stt)(\s|$)/i.test(String(c))));
+    const header=headerIdx>=0?rawRows[headerIdx].map(String):[];
+    const ncol=Math.max(...rawRows.map(r=>r.length),1);
+    nameCols=[];
+    const iHo=header.findIndex(h=>/^họ(\s*(đệm|lót))?$/i.test(h.trim()));
+    const iTen=header.findIndex(h=>/^tên$/i.test(h.trim()));
+    if(iHo>=0&&iTen>=0) nameCols.push({label:`Gộp: “${header[iHo]}” + “${header[iTen]}”`,cols:[iHo,iTen]});
+    for(let c=0;c<ncol;c++) nameCols.push({label:`Cột ${c+1}${header[c]?` – ${header[c]}`:""}`,cols:[c]});
+    let def=0;
+    if(!(iHo>=0&&iTen>=0)){ const k=header.findIndex(h=>/họ.*tên|họ và tên|tên|name/i.test(h)); def=k>=0?k:0; }
+    const cs=$("colSel");
+    cs.innerHTML=nameCols.map((o,k)=>`<option value="${k}">${o.label}</option>`).join("");
+    cs.value=String(def); cs.style.display="";
+    buildStudents();
+  }
+  $("colSel").addEventListener("change",buildStudents);
+
+  function buildStudents(){
+    const opt=nameCols[+$("colSel").value];
+    students=[];
+    rawRows.forEach((r,idx)=>{
+      if(idx<=headerIdx) return;
+      const name=opt.cols.map(c=>String(r[c]??"").trim()).filter(Boolean).join(" ").trim();
+      if(!name||/^\d+$/.test(name)) return;
+      const norm=normName(name); if(!norm) return;
+      students.push({name,norm,tokens:norm.split(" "),score:"",rowIdx:idx});
+    });
+    render();
+    $("stat").textContent=students.length?`Đã nhận ${students.length} học sinh.`:"Không nhận diện được tên. Hãy thử đổi cột họ tên.";
+    $("micBtn").disabled=!students.length || !SR;
+    $("exportBtn").disabled=$("clearBtn").disabled=!students.length;
+  }
+  function render(){
+    tbody.innerHTML=students.map((s,i)=>`
+      <tr id="r${i}" class="${s.score!==""?"filled":""}">
+        <td>${i+1}</td><td>${s.name}</td>
+        <td><input data-i="${i}" value="${s.score}" inputmode="decimal"></td>
+      </tr>`).join("");
+  }
+  tbody.addEventListener("input",e=>{
+    if(e.target.matches("input[data-i]")){
+      const i=+e.target.dataset.i; students[i].score=e.target.value.replace(",",".");
+      e.target.closest("tr").classList.toggle("filled",students[i].score!=="");
+      save();
+    }
+  });
+
+  // ================= Phân tích số điểm =================
+  const DIGIT={"không":0,"một":1,"mốt":1,"hai":2,"ba":3,"bốn":4,"tư":4,"năm":5,"lăm":5,"sáu":6,"bảy":7,"bẩy":7,"bãy":7,"tám":8,"chín":9};
+  const DEC=new Set(["phẩy","phảy","phẫy","phầy","phấy","chấm"]);
+  const HALF=new Set(["rưỡi","rưởi","rưỡi"]);
+  const TEN=new Set(["mười","mươi","mừơi"]);
+  const isNumTok=t=>/^\d+([.,]\d+)?$/.test(t)||t in DIGIT||TEN.has(t)||HALF.has(t)||DEC.has(t)||t==="điểm"||t==="là"||t==="dấu";
+
+  function parseScore(tokens){
+    const toks=tokens.filter(t=>t!=="điểm"&&t!=="là"&&t!=="dấu");
+    if(!toks.length) return null;
+    let str="",seenDec=false,intDone=false;
+    for(const t of toks){
+      if(/^\d+([.,]\d+)?$/.test(t)){ str+=(str&&!seenDec&&intDone?".":"")+t.replace(",","."); if(/[.,]/.test(t)) seenDec=true; intDone=true; continue; }
+      if(DEC.has(t)){ str+="."; seenDec=true; continue; }
+      if(HALF.has(t)){ if(!seenDec){ str+=".5"; seenDec=true; } continue; }
+      if(TEN.has(t)){ if(!str) str="10"; continue; }
+      if(t in DIGIT){ if(str&&!seenDec&&intDone) str+="."; str+=DIGIT[t]; intDone=true; continue; }
+    }
+    let v=parseFloat(str); if(isNaN(v)) return null;
+    if(v>10&&v<=100&&!seenDec) v=v/10;
+    if(v<0||v>10) return null;
+    return Math.round(v*100)/100;
+  }
+  function splitNameScore(text){
+    const t=text.toLowerCase().replace(/(\d),(\d)/g,"$1.$2").replace(/[,;:!?]/g," ").replace(/\s+/g," ").trim();
+    const toks=t.split(" ").filter(Boolean);
+    let k=toks.length; while(k>0&&isNumTok(toks[k-1])) k--;
+    let nameToks=toks.slice(0,k), numToks=toks.slice(k);
+    if(!nameToks.length&&numToks.length>1){ nameToks=[numToks[0]]; numToks=numToks.slice(1); }
+    return {nameText:nameToks.join(" "),score:parseScore(numToks)};
+  }
+
+  // ================= Dò tên =================
+  function rank(nameText){
+    const spN=normName(nameText), sp=spN.split(" ").filter(Boolean);
+    if(!sp.length) return [];
+    const al=aliases[spN];
+    return students.map((s,i)=>{
+      if(al&&al===s.norm) return {i,score:1.2};
+      const used=new Set(); let sum=0,hit=0;
+      for(const w of sp){
+        let best=0,bj=-1;
+        for(let j=0;j<s.tokens.length;j++){ if(used.has(j)) continue; const x=tokSim(w,s.tokens[j]); if(x>best){best=x;bj=j;} }
+        if(best>=0.72){ used.add(bj); sum+=best; hit++; }
+      }
+      const cover=hit/s.tokens.length;
+      let score=(sum/sp.length)*(0.65+0.35*cover);
+      if(used.has(s.tokens.length-1)) score+=0.05;
+      return {i,score};
+    }).filter(r=>r.score>0.3).sort((a,b)=>b.score-a.score);
+  }
+
+  function analyze(text){
+    const p=splitNameScore(text);
+    const ranked=p.nameText?rank(p.nameText):[];
+    return {text,...p,ranked};
+  }
+  function decide(a){
+    if(!a.nameText) return {type:"err",msg:`Không nghe được tên: “${a.text}”`};
+    if(!a.ranked.length) return {type:"err",msg:`Không tìm thấy học sinh tên “${a.nameText}”${a.score!==null?` (điểm ${a.score})`:""}`};
+    if(a.score===null) return {type:"err",msg:`Không hiểu điểm trong: “${a.text}”`};
+    const top=a.ranked[0], sec=a.ranked[1];
+    const ok=top.score>=0.62&&(!sec||top.score-sec.score>=0.08);
+    return ok?{type:"fill",i:top.i,score:a.score}:{type:"ask",cands:a.ranked.slice(0,5),score:a.score};
+  }
+  // chọn phương án nghe tốt nhất trong các "ứng viên" Chrome trả về
+  function pickBest(texts){
+    let best=null;
+    for(const t of texts){
+      const a=analyze(t); const d=decide(a);
+      a.d=d;
+      a.key=(a.ranked[0]?a.ranked[0].score:0)+(a.score!==null?0.15:0)+(d.type==="fill"?0.1:0);
+      if(!best||a.key>best.key) best=a;
+    }
+    return best;
+  }
+
+  // ================= Điền điểm =================
+  const committed=new Map(), timers=new Map();
+  function setScore(i,v){
+    students[i].score=(v===""||v==null)?"":String(v);
+    const tr=$("r"+i); tr.querySelector("input").value=students[i].score;
+    tr.classList.toggle("filled",students[i].score!=="");
+  }
+  function flash(i){
+    const tr=$("r"+i); tr.classList.add("hit");
+    tr.scrollIntoView({block:"center",behavior:"smooth"});
+    setTimeout(()=>tr.classList.remove("hit"),1800);
+  }
+  function applyFill(i,score,text,resIdx,fast){
+    const c=committed.get(resIdx);
+    if(c){ setScore(c.i,c.prev); c.logEl&&c.logEl.remove(); }
+    const prev=students[i].score;
+    setScore(i,score); flash(i);
+    const el=addLog("ok",`${fast?"⚡ ":""}<b>${students[i].name}</b> → <b>${score}</b>${prev!==""&&prev!==String(score)?` (trước đó: ${prev})`:""}<small>nghe: “${text}”</small>`,{undo:{i,prev}});
+    committed.set(resIdx,{i,score,prev,logEl:el,wc:text.split(/\s+/).length});
+    save();
+    if(fast) confirmSpeak(i,score);   // không dừng/khởi động lại micro nữa → chỉ xin quyền 1 lần
+  }
+  function confirmSpeak(i,score){
+    if(!$("speakChk").checked||!window.speechSynthesis) return;
+    const u=new SpeechSynthesisUtterance(`${students[i].name.split(" ").slice(-2).join(" ")}, ${String(score).replace(".",",")}`);
+    u.lang="vi-VN"; speechSynthesis.speak(u);
+  }
+  function learn(spokenName,i){ const k=normName(spokenName); if(k){ aliases[k]=students[i].norm; saveAliases(); } }
+
+  function onInterim(resIdx,text){
+    const lk=committed.get(resIdx);
+    if(lk){
+      // Câu này đã chốt. Chỉ lấy phần nói THÊM phía sau (tên học sinh kế tiếp) để xử lý như câu mới.
+      const w=text.split(/\s+/);
+      if(w.length>lk.wc) onInterim(resIdx+"~",w.slice(lk.wc).join(" "));
+      return;
+    }
+    heardEl.textContent="… "+text;
+    clearTimeout(timers.get(resIdx));
+    const delay=+$("speedSel").value; if(delay<0||!text) return;
+    const a=pickBest([text]); const d=a.d;
+    if(d.type!=="fill") return;
+    const c=committed.get(resIdx);
+    if(c&&c.i===d.i&&String(c.score)===String(d.score)) return;
+    timers.set(resIdx,setTimeout(()=>applyFill(d.i,d.score,a.text,resIdx,true),delay));
+  }
+  function onFinal(resIdx,texts){
+    clearTimeout(timers.get(resIdx)); timers.delete(resIdx);
+    const a=pickBest(texts); const d=a.d;
+    heardEl.textContent="“"+a.text+"”";
+    const c=committed.get(resIdx);
+    if(c){
+      // Đã chốt ngay khi đọc xong: không sửa lại. Chỉ xử lý phần nói thêm phía sau (nếu có).
+      committed.delete(resIdx);
+      const w=texts[0].split(/\s+/);
+      if(w.length>c.wc) onFinal(resIdx+"~",[w.slice(c.wc).join(" ")]);
+      return;
+    }
+    if(d.type==="fill"){ applyFill(d.i,d.score,a.text,resIdx,false); confirmSpeak(d.i,d.score); committed.delete(resIdx); }
+    else if(d.type==="ask"){
+      addLog("warn",`Chưa chắc là ai: “${a.nameText}” – điểm ${d.score}. Chọn đúng học sinh:`,{cands:d.cands,score:d.score,text:a.text,spoken:a.nameText});
+    } else addLog("err",d.msg);
+  }
+
+  function addLog(type,html,extra){
+    const d=document.createElement("div"); d.className="item "+type; d.innerHTML=html;
+    if(extra&&extra.undo){
+      const b=document.createElement("button"); b.textContent="↩ Hoàn tác"; b.style.cssText="margin-top:6px;padding:3px 8px;font-size:12px";
+      b.onclick=()=>{ const {i,prev}=extra.undo; setScore(i,prev); d.remove(); save(); };
+      d.appendChild(b);
+    }
+    if(extra&&extra.cands){
+      const w=document.createElement("div"); w.className="cands";
+      extra.cands.forEach(c=>{
+        const b=document.createElement("button"); b.textContent=`${students[c.i].name} (STT ${c.i+1})`;
+        b.onclick=()=>{ learn(extra.spoken,c.i); d.remove(); applyFill(c.i,extra.score,extra.text,-1,false); committed.delete(-1); };
+        w.appendChild(b);
+      });
+      d.appendChild(w);
+    }
+    logEl.prepend(d);
+    while(logEl.children.length>40) logEl.lastChild.remove();
+    return d;
+  }
+
+  // ================= Nhận diện giọng nói =================
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  let rec=null, listening=false;
+  if(!SR){ $("support").textContent="⚠️ Trình duyệt này không hỗ trợ nhận diện giọng nói. Hãy dùng Google Chrome hoặc Microsoft Edge."; $("micBtn").disabled=true; }
+  else if(location.protocol==="file:") $("support").textContent="Lưu ý: mở file trực tiếp có thể bị hỏi quyền micro nhiều lần. Đưa lên web HTTPS (vd Netlify) để dùng ổn định.";
+
+  function startRec(){
+    rec=new SR(); rec.lang="vi-VN"; rec.continuous=true; rec.interimResults=true; rec.maxAlternatives=5;
+    rec.onstart=()=>{ committed.clear(); timers.forEach(clearTimeout); timers.clear(); };
+    rec.onresult=e=>{
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        const r=e.results[i];
+        if(r.isFinal){
+          const texts=[]; for(let k=0;k<r.length;k++){ const t=r[k].transcript.trim(); if(t) texts.push(t); }
+          if(texts.length) onFinal(i,texts);
+        } else onInterim(i,r[0].transcript.trim());
+      }
+    };
+    rec.onerror=e=>{ if(e.error==="not-allowed"||e.error==="service-not-allowed"){ listening=false; setMic(); addLog("err","Chưa được cấp quyền micro. Hãy cho phép micro cho trang này."); } };
+    rec.onend=()=>{ if(listening){ try{rec.start();}catch(_){} } };
+    rec.start();
+  }
+  function setMic(){
+    const b=$("micBtn");
+    b.textContent=listening?"⏹ Dừng nghe":"🎤 Bắt đầu nghe";
+    b.className=listening?"rec":"pri";
+  }
+  $("micBtn").addEventListener("click",()=>{
+    if(listening){ listening=false; rec&&rec.stop(); } else { listening=true; startRec(); }
+    setMic();
+  });
+  $("manualBtn").addEventListener("click",()=>{ const v=$("manual").value.trim(); if(v){ onFinal(-1,[v]); $("manual").value=""; } });
+  $("manual").addEventListener("keydown",e=>{ if(e.key==="Enter") $("manualBtn").click(); });
+
+  // ================= Xuất / xoá / lưu =================
+  $("exportBtn").addEventListener("click",()=>{
+    const out=rawRows.map(r=>r.slice());
+    const ncol=Math.max(...out.map(r=>r.length));
+    if(headerIdx>=0) out[headerIdx][ncol]="Điểm";
+    students.forEach(s=>{ out[s.rowIdx][ncol]=s.score===""?"":Number(s.score); });
+    const ws=XLSX.utils.aoa_to_sheet(out), wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,"Bang diem");
+    XLSX.writeFile(wb,"bang-diem.xlsx");
+  });
+  $("clearBtn").addEventListener("click",()=>{
+    if(!confirm("Xóa toàn bộ điểm đã nhập?")) return;
+    students.forEach(s=>s.score=""); render(); save();
+  });
+  function save(){ try{ localStorage.setItem("diem-gv",JSON.stringify(students.map(s=>[s.name,s.score]))); }catch(_){} }
+})();
+</script>
+</body>
+</html>
